@@ -16,6 +16,8 @@ GLFW.load_lib()
 GLU.load_lib()
 
 class OCL
+	attr_accessor :kernel, :queue, :context
+
 	def initialize(main, ogl)
 		@main = main
 		@ogl = ogl
@@ -69,13 +71,32 @@ class OCL
 		end
 
 		begin
-			@prog.build
+			@kernel = @prog.build
 		rescue => e
 			puts("[OpenCL] Build failed")
 			puts(e)
 			puts(@prog.build_log)
 			exit()
 		end
+
+		begin
+			@cl_buff = OpenCL.create_from_gl_buffer(@context, ogl.mesh_vbo[0])
+		rescue => e
+			puts("[OpenCL] Buffer creation from OpenGL failed")
+			puts(e)
+			exit()
+		end
+
+		begin
+			OpenCL.enqueue_acquire_gl_objects(@queue, @cl_buff)
+		rescue => e
+			puts("[OpenCL] Acquire GL Buffer failed")
+			puts(e)
+			exit()
+		end
+		OpenCL.enqueue_release_gl_objects(@queue, @cl_buff)
+
+		OpenCL.finish(@queue)
 	end
 
 
@@ -83,7 +104,7 @@ end
 
 class Main
 	attr_reader :window
-	attr_accessor :width, :height 
+	attr_accessor :width, :height, :count
 
 	def initialize()
 		puts("Starting Particle System...")
@@ -124,8 +145,21 @@ class Main
 end
 
 class OGL
+	attr_accessor :mesh_vbo
+
 	def initialize(main)
 		@main = main
+
+		vbo = ' ' * 4
+		glGenBuffers(1, vbo)
+		@mesh_vbo = vbo.unpack('L')
+
+		glBindBuffer(GL_ARRAY_BUFFER, @mesh_vbo[0])
+		glBufferData(GL_ARRAY_BUFFER, Fiddle::SIZEOF_FLOAT * main.count, nil, GL_STATIC_DRAW)
+		#glBindBuffer(GL_ARRAY_BUFFER, 0)
+		glEnableVertexAttribArray(0)
+		glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 0, nil)
+		
 	end
 end
 
@@ -133,6 +167,8 @@ if __FILE__ == $0
 	main = Main.new()
 	main.width = 1280
 	main.height = 720
+	main.count = 3000000
+
   	main.initGlfw()
 
 	ogl = OGL.new(main)

@@ -1,4 +1,10 @@
-__kernel void addition(  float2 alpha, __global const float *x, __global float *y) {
-  size_t ig = get_global_id(0);
-  y[ig] = (alpha.s0 + alpha.s1 + x[ig])*0.3333333333333333333f;
+__kernel void	initParticles(__global float3	*particles)
+{
+	int		gid = get_global_id(0);
+
+	float	x, y, z, n, r, oa, teta;
+	int		oa_index, teta_index, n_index;
+	int		i = gid;
+
+	particles[gid].xyz = (float3)(0.5, 0.5, 0.5);
 }
