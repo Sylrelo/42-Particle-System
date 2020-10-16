@@ -45,18 +45,19 @@ class OCL
 		@kernel_init = OpenCL.create_kernel(@prog, "initParticles")
 
 		begin
-			@cl_buff = OpenCL.create_from_gl_buffer(@context, ogl.mesh_vbo[0])
+			@cl_buff = OpenCL.create_from_gl_buffer(@context, ogl.vbo_ptr)
 		rescue => e
 			puts("[OpenCL] Buffer creation from OpenGL failed")
 			puts(e)
 			exit()
 		end
 
-		#OpenCL.enqueue_acquire_gl_objects(@queue, @cl_buff)
-		#OpenCL.set_kernel_arg(@kernel_init, 0, @cl_buff)
-		#OpenCL.enqueue_ndrange_kernel(@queue, @kernel_init, [(main.count / 100).round], :local_work_size => [100])
-		#OpenCL.enqueue_release_gl_objects(@queue, @cl_buff)
-		#OpenCL.finish(@queue)
+		OpenCL.enqueue_acquire_gl_objects(@queue, @cl_buff)
+		OpenCL.set_kernel_arg(@kernel_init, 0, @cl_buff)
+
+		OpenCL.enqueue_ndrange_kernel(@queue, @kernel_init, [main.count])
+		OpenCL.enqueue_release_gl_objects(@queue, @cl_buff)
+		OpenCL.finish(@queue)
 	end
 
 
@@ -75,7 +76,7 @@ class Main
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE)
 		glfwWindowHint(GLFW_SAMPLES, 4)
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4)
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0)
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2)
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE)
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE)
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE)
@@ -83,41 +84,34 @@ class Main
 		@window = glfwCreateWindow(width, height, "Particles System", nil, nil)
 		glfwMakeContextCurrent(window)
 		ratio = width.to_f / height.to_f
-		glViewport(0, 0, 1280, 720)
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		gluPerspective(45.0, ratio, 1.0, 1000.0)
-		glMatrixMode(GL_MODELVIEW)
-	end
-
-	def Display()
-		glfwShowWindow(@window)
-		while glfwWindowShouldClose( window ) == 0
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-			glLoadIdentity()
-			glTranslatef(0.0, 0.0, -50.0)
-			glRotatef(glfwGetTime() * 50.0, 0.0, 1.0, 0.0)
-			glfwSwapBuffers( window )
-			glfwPollEvents()
-		end
+		glViewport(0, 0, width, height)
+		#glMatrixMode(GL_PROJECTION)
+		#glLoadIdentity()
+		#gluPerspective(30.0, ratio, 1.0, 1000.0)
+		
+		#glMatrixMode(GL_MODELVIEW)
 	end
 end
 
 class OGL
-	attr_accessor :mesh_vbo
+	attr_accessor :vbo_ptr, :main
 
 	def initialize(main)
 		@main = main
 
 		vbo = ' ' * 4
-		glGenBuffers(1, vbo)
-		@mesh_vbo = vbo.unpack('L')
+		vao = ' ' * 4
 
-		glBindBuffer(GL_ARRAY_BUFFER, @mesh_vbo[0])
-		glBufferData(GL_ARRAY_BUFFER, Fiddle::SIZEOF_FLOAT * main.count, nil, GL_STATIC_DRAW)
-		#glBindBuffer(GL_ARRAY_BUFFER, 0)
+		glGenBuffers(1, vbo)
+		glGenVertexArrays(1, vao)
+		@vao_ptr = vao.unpack('L')[0]
+		@vbo_ptr = vbo.unpack('L')[0]
+
+		glBindVertexArray(@vao_ptr)
+		glBindBuffer(GL_ARRAY_BUFFER, @vbo_ptr)
+		glBufferData(GL_ARRAY_BUFFER, (Fiddle::SIZEOF_FLOAT * 4) * main.count, nil, GL_DYNAMIC_DRAW)
 		glEnableVertexAttribArray(0)
-		glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 0, nil)
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nil)
 		self.init_programs()
 	end
 
@@ -141,7 +135,6 @@ class OGL
 		vertex_file = "kernels/vertex.glsl"
 		fragment_file = "kernels/fragment.glsl"
 
-
 		begin
 			vertex_src = File.read(vertex_file)
 		rescue
@@ -157,22 +150,41 @@ class OGL
 
 		@program = glCreateProgram()
 
-		vertex_shader = self.create_shader(vertex_src, GL_VERTEX_SHADER)
+		vertex_shader 	= self.create_shader(vertex_src, GL_VERTEX_SHADER)
 		fragment_shader = self.create_shader(fragment_src, GL_FRAGMENT_SHADER)
-		exit()
+
+		glAttachShader(@program, vertex_shader)
+		glAttachShader(@program, fragment_shader)
+		glLinkProgram(@program)
+		glDetachShader(@program, vertex_shader)
+		glDetachShader(@program, fragment_shader)
+		glDeleteShader(vertex_shader)
+		glDeleteShader(fragment_shader)
+		glUseProgram(@program)
+
 	end
+
+	def Display()
+		glfwShowWindow(@main.window)
+
+		while glfwWindowShouldClose( @main.window ) == 0
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+			glBindVertexArray(@vao_ptr);
+			glDrawArrays(GL_POINTS, 0, @main.count)
+			glfwSwapBuffers( @main.window )
+			glfwPollEvents()
+		end
+	end
+
 end
 
 if __FILE__ == $0
 	main = Main.new()
-	main.width = 1280
-	main.height = 720
+	main.width = 1600
+	main.height = 900
 	main.count = 3000000
-
-  	main.initGlfw()
-
+	main.initGlfw()
 	ogl = OGL.new(main)
 	ocl = OCL.new(main, ogl)
-
-	main.Display()
+	ogl.Display()
 end
