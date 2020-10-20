@@ -15,12 +15,12 @@
 #include "GLFW/glfw3.h"
 #include "CL/opencl.h"
 
+typedef GLfloat	mat4f[4][4];
 typedef struct			s_ogl
 {
 	GLFWwindow			*window_hnd;
 	unsigned int		program;
 	unsigned int		vbo_pos;
-	unsigned int		vbo_velo;
 	unsigned int		vao;
 }						t_ogl;
 
@@ -46,13 +46,9 @@ typedef struct			s_app
 void	die(const char *msg);
 
 
-void			shader_compile(unsigned int shader, char *buffer);
-unsigned int	shader_init(t_app *app, const char *file, unsigned int type);
-void			program_init(t_app *app);
-void			buffer_init(t_app *app);
-
+void	opengl_init_buffer(t_app *app);
+void	opengl_init_program(t_app *app);
 
 void	opencl_init(t_ocl *ocl, t_ogl *ogl);
-
-
 void	opencl_execute_kernel(int particle_count, t_ocl *ocl, t_ogl *ogl, cl_kernel kernel);
+void	opencl_error(int err);

@@ -39,25 +39,22 @@ void	opencl_error(int err)
 
 void	opencl_execute_kernel(int particle_count, t_ocl *ocl, t_ogl *ogl, cl_kernel kernel)
 {
-	cl_mem		buffers[2];
 	int			err;
 	size_t		local_work_size;
 
 	local_work_size = 200;
-	buffers[0] = ocl->buff_pos;
-	buffers[1] = ocl->buff_velo;
-	glFinish();
-	err = clSetKernelArg(kernel, 0, sizeof(GL_FLOAT_VEC3), (void *)&ocl->buff_pos);
+	err = clEnqueueAcquireGLObjects(ocl->queue, 1, &ocl->buff_pos, 0, 0, 0);
 	opencl_error(err);
-	err = clSetKernelArg(kernel, 1, sizeof(GL_FLOAT_VEC3), (void *)&ocl->buff_velo);
+	err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &ocl->buff_pos);
 	opencl_error(err);
-	err = clEnqueueAcquireGLObjects(ocl->queue, 2, buffers, 0, 0, 0);
+	err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &ocl->buff_velo);
 	opencl_error(err);
-	err = clEnqueueNDRangeKernel(ocl->queue, kernel, 1, 0, &particle_count, &local_work_size, 0, 0, 0);
-	opencl_error(err);
-	err = clEnqueueReleaseGLObjects(ocl->queue, 2, buffers, 0, 0, 0);
+	err = clEnqueueNDRangeKernel(ocl->queue, kernel, 1, NULL, &particle_count,
+		&local_work_size, 0, NULL, NULL);
 	opencl_error(err);
 	clFinish(ocl->queue);
+	err = clEnqueueReleaseGLObjects(ocl->queue, 1, &ocl->buff_pos, 0, 0, 0);
+	opencl_error(err);
 }
 
 void	opencl_create_program(t_ocl *ocl)
@@ -108,7 +105,8 @@ void	opencl_init(t_ocl *ocl, t_ogl *ogl)
 	ocl->buff_pos = clCreateFromGLBuffer(ocl->ctx, CL_MEM_WRITE_ONLY, 
 		ogl->vbo_pos, &err);
 	opencl_error(err);
-	ocl->buff_velo = clCreateFromGLBuffer(ocl->ctx, CL_MEM_WRITE_ONLY, 
-		ogl->vbo_velo, &err);
+	ocl->buff_velo = clCreateBuffer(ocl->ctx, CL_MEM_READ_WRITE, 
+		sizeof(cl_float3) * 3000000, NULL, &err);
 	opencl_error(err);
+	clFinish(ocl->queue);
 }

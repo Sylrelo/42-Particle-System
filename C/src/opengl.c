@@ -16,7 +16,7 @@
 #include "global.h"
 #include "GL/gl.h"
 
-void			shader_compile(unsigned int shader, char *buffer)
+static void			shader_compile(unsigned int shader, char *buffer)
 {
 	int		success;
 	char	log[1024];
@@ -32,7 +32,7 @@ void			shader_compile(unsigned int shader, char *buffer)
 	}
 }
 
-unsigned int	shader_init(t_app *app, const char *file, unsigned int type)
+static unsigned int	shader_init(t_app *app, const char *file, unsigned int type)
 {
 	FILE			*fp;
 	char			*buffer;
@@ -55,7 +55,7 @@ unsigned int	shader_init(t_app *app, const char *file, unsigned int type)
 	return (shader);
 }
 
-void			program_init(t_app *app)
+void				opengl_init_program(t_app *app)
 {
 	unsigned int	fragment;
 	unsigned int	vertex;
@@ -77,29 +77,23 @@ void			program_init(t_app *app)
 	}
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
-	printf("Program compiled\n");
 }
 
-void			buffer_init(t_app *app)
+void				opengl_init_buffer(t_app *app)
 {
 	int				err;
 	long unsigned	size;
 
-	size = (sizeof(float) * 3) * app->particle_count;
+	size = (sizeof(float) * 4) * app->particle_count;
 	glGenVertexArrays(1, &app->ogl.vao);
-	glGenBuffers(1, &app->ogl.vbo_velo);
 	glGenBuffers(1, &app->ogl.vbo_pos);
 	glBindVertexArray(app->ogl.vao);
 	glBindBuffer(GL_ARRAY_BUFFER, app->ogl.vbo_pos);
 	glBufferData(GL_ARRAY_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glBindBuffer(GL_ARRAY_BUFFER, app->ogl.vbo_velo);
-	glBufferData(GL_ARRAY_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	err = glGetError();
-	if (err)
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+	glFinish();
+	if (glGetError())
 	{
 		printf("%d\n", err);
 		exit(1);

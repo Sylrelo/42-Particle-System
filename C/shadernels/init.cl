@@ -16,10 +16,9 @@ __kernel void	initParticles(__global float3 *particles, __global float3 *velocit
 	}
 	*/
 
-
 	uint	subDivCount = cbrt((float)3000000);
 	float2	delta = (float2)(M_PI * 2 / subDivCount, M_PI / subDivCount);
-	float	radiusDelta = 5.f / subDivCount;
+	float	radiusDelta = 3.f / subDivCount;
 
 	uint	x = fmod(i, (float)subDivCount);
 	uint	y = fmod((float)i / subDivCount, (float)subDivCount);
@@ -36,11 +35,15 @@ __kernel void	initParticles(__global float3 *particles, __global float3 *velocit
 	velocity[i].x = 0.0f;
 	velocity[i].y = 0.0f;
 	velocity[i].z = 0.0f;
+
+	//particles[i].x = 5;
+	//particles[i].y = 5;
+	//particles[i].z = -5;
 }
 
 float3			get_gp_effect(float3 particles)
 {
-	float3 op = {0.0, 0.0, 5};
+	float3 op = {5, -3.0, 0};
 
 	float3	direction = op.xyz - particles.xyz;
 	float	distance = length(direction);
@@ -58,15 +61,12 @@ __kernel void	updateParticles(__global float3 *particles, __global float3 *veloc
 {
 	int				i = get_global_id(0);
 
-	if (i == 0)
-		printf("Connard\n");
-
 	if (length(velocity[i]) > 0.5f) {
 		velocity[i] /= 1.04f;
 	}
 
 	velocity[i] 	+= (get_gp_effect(particles[i]));
-	particles[i] 	+= velocity[i] / 1000.f;
+	particles[i] 	+= velocity[i] / 50.f;
 }
 
 
