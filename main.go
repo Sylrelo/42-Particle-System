@@ -60,6 +60,8 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, 1024*4, nil, gl.DYNAMIC_DRAW)
 
+	// fmt.Println(gl.CreateShader(gl.COMPUTE_SHADER))
+
 	fmt.Println("OpenGL VBO created:", vbo)
 
 	clPlatforms, err := clgo.GetAvailablePlatforms()
@@ -76,6 +78,8 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	clgo.CreateKernel(clContext, clDevices[0], "./compute/kernel.cl", "vectorAdd")
 
 	clQueue, err := clgo.CreateCommandQueue(clContext, clDevices[0])
 	if err != nil {

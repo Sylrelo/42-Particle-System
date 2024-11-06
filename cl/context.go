@@ -13,7 +13,9 @@ import (
 	"unsafe"
 )
 
-func CreateSharedOpenglContext() (C.cl_context, error) {
+type CL_CONTEXT = C.cl_context
+
+func CreateSharedOpenglContext() (CL_CONTEXT, error) {
 	var properties []C.cl_context_properties
 
 	cglContext := C.CGLGetCurrentContext()
