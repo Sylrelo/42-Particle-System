@@ -7,6 +7,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"log"
 	"unsafe"
 )
 
@@ -70,6 +71,28 @@ func (q *ClQueue) ReleaseGLObjects(buffer C.cl_mem) error {
 	return nil
 }
 
+func (q *ClQueue) EnqueueKernel(kernel CL_KERNEL, workSize int) error {
+	globalWorkSize := C.size_t(workSize)
+
+	errCode := C.clEnqueueNDRangeKernel(
+		q.queue,
+		kernel,
+		1, nil,
+		&globalWorkSize,
+		nil, 0, nil, nil,
+	)
+	if errCode != C.CL_SUCCESS {
+		log.Fatalf("Failed to enqueue kernel: %d", errCode)
+		return errors.New(ErrorString(int(errCode)))
+	}
+
+	return nil
+}
+
 func (q *ClQueue) Finish() {
-	C.clFinish(q.queue)
+	clErr := C.clFinish(q.queue)
+
+	if clErr != C.CL_SUCCESS {
+		log.Fatalln(ErrorString(int(clErr)))
+	}
 }

@@ -15,15 +15,47 @@ import (
 type CL_PROGRAM = C.cl_program
 type CL_KERNEL = C.cl_kernel
 
+//
+
 type ClKernel struct {
 	program CL_PROGRAM
-	kernel  CL_KERNEL
+	Kernel  CL_KERNEL
+
+	kernels map[string]CL_KERNEL
 }
 
 func (kernel *ClKernel) Release() {
-	C.clReleaseKernel(kernel.kernel)
+	C.clReleaseKernel(kernel.Kernel)
 	C.clReleaseProgram(kernel.program)
 }
+
+// func (kernel *ClKernel) Use() {
+
+// }
+
+func SetKernelArgs(kernel CL_KERNEL, args ...CL_MEM) error {
+
+	for _, arg := range args {
+
+		// fmt.Println(arg, C.size_t(unsafe.Sizeof(arg)), unsafe.Pointer(&arg))
+		errCode := C.clSetKernelArg(
+			kernel,
+			0,
+			C.size_t(unsafe.Sizeof(arg)),
+			unsafe.Pointer(&arg),
+		)
+
+		if errCode != C.CL_SUCCESS {
+			log.Fatalf("Failed to set kernel argument: %d", errCode)
+			return errors.New(ErrorString(int(errCode)))
+		}
+
+	}
+
+	return nil
+}
+
+//
 
 func CreateKernel(context CL_CONTEXT, device ClDevice, filepath string, funcName string) (ClKernel, error) {
 
@@ -57,7 +89,8 @@ func CreateKernel(context CL_CONTEXT, device ClDevice, filepath string, funcName
 
 	return ClKernel{
 		program: program,
-		kernel:  kernel,
+		Kernel:  kernel,
+		kernels: make(map[string]CL_KERNEL),
 	}, nil
 }
 
