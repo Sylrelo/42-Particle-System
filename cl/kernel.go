@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"unsafe"
 )
 
@@ -19,13 +20,11 @@ type CL_KERNEL = C.cl_kernel
 
 type ClKernel struct {
 	program CL_PROGRAM
-	Kernel  CL_KERNEL
-
-	kernels map[string]CL_KERNEL
+	Kernels map[string]CL_KERNEL
 }
 
 func (kernel *ClKernel) Release() {
-	C.clReleaseKernel(kernel.Kernel)
+	// C.clReleaseKernel(kernel.Kernel)
 	C.clReleaseProgram(kernel.program)
 }
 
@@ -57,7 +56,7 @@ func SetKernelArgs(kernel CL_KERNEL, args ...CL_MEM) error {
 
 //
 
-func CreateKernel(context CL_CONTEXT, device ClDevice, filepath string, funcName string) (ClKernel, error) {
+func InitKernels(context CL_CONTEXT, device ClDevice, filepath string) (ClKernel, error) {
 
 	filebytes, err := os.ReadFile(filepath)
 	if err != nil {
@@ -70,28 +69,49 @@ func CreateKernel(context CL_CONTEXT, device ClDevice, filepath string, funcName
 
 	program := C.clCreateProgramWithSource(context, 1, &cSource, nil, nil)
 	clErr := C.clBuildProgram(program, 1, &device.ID, nil, nil, nil)
-
 	log.Printf("%s program built.", filepath)
-
 	if clErr != C.CL_SUCCESS {
 		getCompilationError(program, device)
 		return ClKernel{}, errors.New(ErrorString(int(clErr)))
 	}
 
-	cFuncName := C.CString(funcName)
+	re := regexp.MustCompile(`__kernel\s*\w+\s*(\w+)\s*\(`)
+	matches := re.FindAllStringSubmatch(filecontent, -1)
+
+	kernels := make(map[string]CL_KERNEL)
+
+	for _, match := range matches {
+		if len(match) > 1 {
+			funcName := match[1]
+			createdKernel, err := createKernel(program, funcName)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			kernels[funcName] = createdKernel
+
+		}
+	}
+
+	return ClKernel{
+		program: program,
+		Kernels: kernels,
+	}, nil
+}
+
+func createKernel(program CL_PROGRAM, fnName string) (CL_KERNEL, error) {
+	var clErr C.cl_int
+
+	cFuncName := C.CString(fnName)
 	defer C.free(unsafe.Pointer(cFuncName))
 
 	kernel := C.clCreateKernel(program, cFuncName, nil)
 	if clErr != C.CL_SUCCESS {
-		return ClKernel{}, errors.New(ErrorString(int(clErr)))
+		return nil, errors.New(ErrorString(int(clErr)))
 	}
-	log.Printf("%s (%s) kernel created.", filepath, funcName)
+	log.Printf("%s kernel created.", fnName)
 
-	return ClKernel{
-		program: program,
-		Kernel:  kernel,
-		kernels: make(map[string]CL_KERNEL),
-	}, nil
+	return kernel, nil
 }
 
 func getCompilationError(program CL_PROGRAM, device ClDevice) {

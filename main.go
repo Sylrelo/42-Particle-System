@@ -96,7 +96,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	clKernel, err := clgo.CreateKernel(clContext, clDevices[0], currentPath+"/compute/kernel.cl", "initParticles")
+	clKernel, err := clgo.InitKernels(clContext, clDevices[0], currentPath+"/compute/kernel.cl")
 	ExitOnError(err)
 
 	_ = clKernel
@@ -136,11 +136,11 @@ func main() {
 
 	///////////////////////
 	gl.Finish()
-	errCl := clgo.SetKernelArgs(clKernel.Kernel, (clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
+	errCl := clgo.SetKernelArgs(clKernel.Kernels["initParticles"], (clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
 	ExitOnError(errCl)
 	errCl = clQueue.AcquireGLObjects((clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
 	ExitOnError(errCl)
-	errCl = clQueue.EnqueueKernel(clKernel.Kernel, particlesCount)
+	errCl = clQueue.EnqueueKernel(clKernel.Kernels["initParticles"], particlesCount)
 	ExitOnError(errCl)
 	errCl = clQueue.ReleaseGLObjects((clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
 	ExitOnError(errCl)
