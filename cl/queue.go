@@ -37,11 +37,13 @@ func CreateCommandQueue(clContext C.cl_context, device ClDevice) (ClQueue, error
 	}, nil
 }
 
-func (q *ClQueue) AcquireGLObjects(buffer CL_MEM) error {
+func (q *ClQueue) AcquireGLObjects(buffers []CL_MEM) error {
+	numObjects := C.cl_uint(len(buffers))
+
 	clErr := C.clEnqueueAcquireGLObjects(
 		q.queue,
-		1,
-		&buffer,
+		numObjects,
+		(*C.cl_mem)(unsafe.Pointer(&buffers[0])),
 		0,
 		nil,
 		nil,
@@ -54,11 +56,13 @@ func (q *ClQueue) AcquireGLObjects(buffer CL_MEM) error {
 	return nil
 }
 
-func (q *ClQueue) ReleaseGLObjects(buffer C.cl_mem) error {
+func (q *ClQueue) ReleaseGLObjects(buffers []CL_MEM) error {
+	numObjects := C.cl_uint(len(buffers))
+
 	clErr := C.clEnqueueReleaseGLObjects(
 		q.queue,
-		1,
-		&buffer,
+		numObjects,
+		(*C.cl_mem)(unsafe.Pointer(&buffers[0])),
 		0,
 		nil,
 		nil,
@@ -82,7 +86,7 @@ func (q *ClQueue) EnqueueKernel(kernel CL_KERNEL, workSize int) error {
 		nil, 0, nil, nil,
 	)
 	if errCode != C.CL_SUCCESS {
-		log.Fatalf("Failed to enqueue kernel: %d", errCode)
+		log.Fatalf("Failed to enqueue kernel: %d (%s)", errCode, ErrorString(int(errCode)))
 		return errors.New(ErrorString(int(errCode)))
 	}
 

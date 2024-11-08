@@ -26,6 +26,8 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
+	// glfw.WindowHint(glfw.AlphaBits, 8)
+
 	window, err := glfw.CreateWindow(1280, 720, "OpenCL-OpenGL Interop", nil, nil)
 	if err != nil {
 		log.Fatalln("failed to create glfw window:", err)
@@ -45,10 +47,19 @@ func main() {
 	program, err := CreateProgram(renderFragmentShader, renderVertexShader)
 	ExitOnError(err)
 
+	particlesCount := 1000000
+
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	particlesCount := 500000
+	gl.BufferData(gl.ARRAY_BUFFER, particlesCount*4*4, nil, gl.DYNAMIC_DRAW)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+
+	///
+
+	var vbo_velocity uint32
+	gl.GenBuffers(1, &vbo_velocity)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo_velocity)
 	gl.BufferData(gl.ARRAY_BUFFER, particlesCount*4*4, nil, gl.DYNAMIC_DRAW)
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 
@@ -56,13 +67,13 @@ func main() {
 
 	fmt.Println("OpenGL VBO created:", vbo)
 
-	cl_compute := InitClCompute(vbo)
+	cl_compute := InitClCompute(vbo, vbo_velocity)
 
 	fmt.Println("OpenCL-OpenGL interop buffer created successfully on macOS")
 
 	////////////////////////
 	perspectiveMatrix := mgl32.Perspective(mgl32.DegToRad(45.0), 16.0/9.0, 0.01, 10000)
-	cameraMatrix := mgl32.LookAtV(mgl32.Vec3{0, 0, 4}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	cameraMatrix := mgl32.LookAtV(mgl32.Vec3{0, 0, 10}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
 	// cameraMatrix := mgl32.Ident4()
 
 	// perspectiveMatrix = mgl32.Ident4()
@@ -78,28 +89,37 @@ func main() {
 
 	var vao uint32
 	gl.UseProgram(program)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
-	// gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 4, gl.FLOAT, false, 0, nil)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo_velocity)
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointer(1, 4, gl.FLOAT, false, 0, nil)
 
 	// gl.EnableVertexArrayAttrib(0)
 
 	// gl.PointSize(2)
 
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.ClearColor(0, 0, 0, 1.0)
+
 	for !window.ShouldClose() {
-		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		// clQueue.Finish()
+		gl.Finish()
+
+		cl_compute.RunGravitateKernel(particlesCount)
 		// gl.UseProgram(program)
 		// gl.EnableVertexAttribArray(0)
 		// gl.VertexAttribPointer(0, 4, gl.FLOAT, false, 0, nil)
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		// gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.BindVertexArray(vao)
 		gl.DrawArrays(gl.POINTS, 0, int32(particlesCount))
 
@@ -108,6 +128,7 @@ func main() {
 		// clQueue.Finish()
 
 		gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}

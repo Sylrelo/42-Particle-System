@@ -34,12 +34,12 @@ func (kernel *ClKernel) Release() {
 
 func SetKernelArgs(kernel CL_KERNEL, args ...CL_MEM) error {
 
-	for _, arg := range args {
+	for i, arg := range args {
 
 		// fmt.Println(arg, C.size_t(unsafe.Sizeof(arg)), unsafe.Pointer(&arg))
 		errCode := C.clSetKernelArg(
 			kernel,
-			0,
+			(C.cl_uint)(i),
 			C.size_t(unsafe.Sizeof(arg)),
 			unsafe.Pointer(&arg),
 		)

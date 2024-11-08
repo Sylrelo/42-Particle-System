@@ -23,7 +23,25 @@ static float3 get_position_in_cube(ulong *seed) {
   return position;
 }
 
-__kernel void initParticles(__global float4 *particles) {
+// TODO
+__kernel void gravitateParticles(__global float4 *particles, __global float4 *velocity) {
+  int i = get_global_id(0);
+
+  float3 TMP_GRAVITATION_POINT = (float3) {0, 0.5, -0.5};
+  float GRAVITY_CONST = 0.001f;
+  float DELTA_TIME = 4.1;
+
+  float3 direction = TMP_GRAVITATION_POINT - particles[i].xyz;
+  float distance = length(direction) + 1e-6f;
+  direction /= distance;
+  float force = GRAVITY_CONST / (distance * distance);
+
+
+  velocity[i].xyz += direction * force * DELTA_TIME;
+  particles[i].xyz += velocity[i].xyz * DELTA_TIME;
+}
+
+__kernel void initParticles(__global float4 *particles, __global float4 *velocity) {
   int i = get_global_id(0);
 
   ulong x = i / 1280.0;
@@ -45,6 +63,7 @@ __kernel void initParticles(__global float4 *particles) {
   // printf("%f %f %f\n", particles[i].x, particles[i].y, particles[i].z);
   // particles[i].w = 0;
 
-  // velocity[i] = (float4) { 0, 0, 0, 0 };
+  //TMP
+  velocity[i] = (float4) {0.01, 0.001, 0.01, 0 };
   // colors[i] = (float4) { 1, 1, 1, 0 };
 }
