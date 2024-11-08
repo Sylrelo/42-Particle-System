@@ -1,46 +1,21 @@
 package main
 
-/*
-#cgo CFLAGS: -framework OpenCL -framework OpenGL
-#cgo LDFLAGS: -framework OpenCL -framework OpenGL
-#include <OpenCL/opencl.h>
-#include <OpenGL/gl.h>
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/CGLCurrent.h>
-*/
-import "C"
 import (
-	"clgo"
 	"fmt"
 	"log"
 	"os"
 	"runtime"
-	"unsafe"
 
 	"github.com/go-gl/gl/all-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-type Platform struct {
-	ID      C.cl_platform_id
-	Name    string
-	Vendor  string
-	Version string
-}
-
 func init() {
 	runtime.LockOSThread()
 }
 
-// func setInitKernelArgs() {
-
-// }
-
 func main() {
-	var clErr C.cl_int
-
-	// Initialize GLFW for OpenGL context creation
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
 	}
@@ -81,42 +56,7 @@ func main() {
 
 	fmt.Println("OpenGL VBO created:", vbo)
 
-	clPlatforms, err := clgo.GetAvailablePlatforms()
-	if err != nil {
-		log.Fatalln(clPlatforms)
-	}
-
-	clContext, err := clgo.CreateSharedOpenglContext()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	clDevices, err := clgo.GetAvailableDevices(clPlatforms[0])
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	clKernel, err := clgo.InitKernels(clContext, clDevices[0], currentPath+"/compute/kernel.cl")
-	ExitOnError(err)
-
-	_ = clKernel
-
-	clQueue, err := clgo.CreateCommandQueue(clContext, clDevices[0])
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// Step 5: Create OpenCL Buffer from OpenGL Buffer
-	clBuffer := C.clCreateFromGLBuffer(
-		(C.cl_context)(unsafe.Pointer(clContext)),
-		C.CL_MEM_READ_WRITE,
-		C.GLuint(vbo),
-		&clErr,
-	)
-	if clErr != C.CL_SUCCESS {
-		fmt.Println("Failed to create OpenCL buffer from OpenGL buffer")
-		return
-	}
+	cl_compute := InitClCompute(vbo)
 
 	fmt.Println("OpenCL-OpenGL interop buffer created successfully on macOS")
 
@@ -134,21 +74,7 @@ func main() {
 	gl.UniformMatrix4fv(perspectiveUniform, 1, false, &perspectiveMatrix[0])
 	gl.UniformMatrix4fv(cameraUniform, 1, false, &cameraMatrix[0])
 
-	///////////////////////
-	gl.Finish()
-	errCl := clgo.SetKernelArgs(clKernel.Kernels["initParticles"], (clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
-	ExitOnError(errCl)
-	errCl = clQueue.AcquireGLObjects((clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
-	ExitOnError(errCl)
-	errCl = clQueue.EnqueueKernel(clKernel.Kernels["initParticles"], particlesCount)
-	ExitOnError(errCl)
-	errCl = clQueue.ReleaseGLObjects((clgo.CL_MEM)(unsafe.Pointer(clBuffer)))
-	ExitOnError(errCl)
-	clQueue.Finish()
-
-	// _ = clBuffer
-	// _ = clQueue
-	///////////////////////
+	cl_compute.RunInitKernel(particlesCount)
 
 	var vao uint32
 	gl.UseProgram(program)
