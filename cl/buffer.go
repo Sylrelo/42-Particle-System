@@ -16,7 +16,7 @@ func CreateSharedBuffer(clContext CL_CONTEXT, glVbo uint32) (CL_MEM, error) {
 	clBuffer := C.clCreateFromGLBuffer(
 		(C.cl_context)(unsafe.Pointer(clContext)),
 		C.CL_MEM_READ_WRITE,
-		C.GLuint(glVbo),
+		C.cl_uint(glVbo),
 		&clErr,
 	)
 

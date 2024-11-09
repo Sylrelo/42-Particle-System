@@ -29,10 +29,10 @@ func GetAvailablePlatforms() ([]ClPlatform, error) {
 	}
 
 	platforms := make([]CL_PLATFORM_ID, numPlatforms)
-	// if C.clGetPlatformIDs(numPlatforms, &platforms[0], nil) != C.CL_SUCCESS {
-	// 	fmt.Println("Error getting platform IDs")
-	// 	return nil, errors.New("Error getting number of platforms")
-	// }
+	if C.clGetPlatformIDs(numPlatforms, &platforms[0], nil) != C.CL_SUCCESS {
+		fmt.Println("Error getting platform IDs")
+		return nil, errors.New("Error getting platforms IDs")
+	}
 
 	var platformList []ClPlatform
 	for _, platform := range platforms {
@@ -50,13 +50,17 @@ func GetAvailablePlatforms() ([]ClPlatform, error) {
 
 func getPlatformInfoString(platform CL_PLATFORM_ID, paramName C.cl_platform_info) string {
 	var size C.size_t
-	if C.clGetPlatformInfo(platform, paramName, 0, nil, &size) != C.CL_SUCCESS {
-		return "ERROR"
+	clErr := C.clGetPlatformInfo(platform, paramName, 0, nil, &size)
+
+	if clErr != C.CL_SUCCESS {
+		return ErrorString(int(clErr))
 	}
 
 	buffer := make([]byte, size)
-	if C.clGetPlatformInfo(platform, paramName, size, unsafe.Pointer(&buffer[0]), nil) != C.CL_SUCCESS {
-		return "ERROR"
+
+	clErr = C.clGetPlatformInfo(platform, paramName, size, unsafe.Pointer(&buffer[0]), nil)
+	if clErr != C.CL_SUCCESS {
+		return ErrorString(int(clErr))
 	}
 
 	return string(buffer[:size-1])

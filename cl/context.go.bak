@@ -3,8 +3,11 @@ package clgo
 /*
 #include <OpenCL/opencl.h>
 #include <OpenGL/gl.h>
+
+#ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/CGLCurrent.h>
+#endif
 */
 import "C"
 import (
@@ -18,10 +21,10 @@ type CL_CONTEXT = C.cl_context
 func CreateSharedOpenglContext() (CL_CONTEXT, error) {
 	var properties []C.cl_context_properties
 
-	cglContext := C.CGLGetCurrentContext()
-	cglShareGroup := C.CGLGetShareGroup(cglContext)
-
 	if runtime.GOOS == "darwin" {
+		cglContext := C.CGLGetCurrentContext()
+		cglShareGroup := C.CGLGetShareGroup(cglContext)
+
 		properties = []C.cl_context_properties{
 			C.cl_context_properties(C.CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE),
 			C.cl_context_properties(uintptr(unsafe.Pointer(cglShareGroup))),

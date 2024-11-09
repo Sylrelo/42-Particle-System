@@ -48,9 +48,9 @@ func InitClCompute(glPositionBuffer uint32, glVelocityBuffer uint32) ComputeCL {
 		log.Println(device.ID, device.Name)
 	}
 
-	clContext, err := clgo.CreateSharedOpenglContext()
+	clContext, err := clgo.CreateSharedOpenglContext(clPlatforms[0], clDevices[0])
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("CreateSharedOpenglContext", err)
 	}
 	log.Println("Shared OpenCL-GL Context Created.")
 

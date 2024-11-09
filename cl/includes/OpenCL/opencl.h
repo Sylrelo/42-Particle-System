@@ -17,6 +17,9 @@
 #ifndef __OPENCL_H
 #define __OPENCL_H
 
+#define CL_TARGET_OPENCL_VERSION 120
+
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -25,6 +28,9 @@ extern "C"
 #include <OpenCL/cl.h>
 #include <OpenCL/cl_gl.h>
 #include <OpenCL/cl_ext.h>
+
+
+
 
 #ifdef __cplusplus
 }
