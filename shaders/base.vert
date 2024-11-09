@@ -10,11 +10,13 @@ uniform mat4 camera;
 // out vec3 fragColor;
 
 out vec3 velocity;
+out vec3 position;
 
 void main(void)
 {
     gl_Position = perspective * camera * vec4(aPosition.xyz, 1.0);
     velocity = aVelocity.xyz;
+    position = aPosition.xyz;
     // fragColor = vec4(1);
     // fragColor = aColors.rgb;
 }
