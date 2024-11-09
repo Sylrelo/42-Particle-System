@@ -11,8 +11,10 @@ package clgo
 #cgo windows CFLAGS: -Iincludes/
 #cgo windows LDFLAGS: -static -Llib/ -lOpenCL
 
+#ifndef __LINUX__
 #include <OpenCL/opencl.h>
 #include <OpenGL/gl.h>
+#endif
 
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
