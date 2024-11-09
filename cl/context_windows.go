@@ -39,33 +39,22 @@ type CL_CONTEXT = C.cl_context
 func CreateSharedOpenglContext(platform ClPlatform, device ClDevice) (CL_CONTEXT, error) {
 	var properties []C.cl_context_properties
 
-	// _ = properties
-
 	glContext := C.wglGetCurrentContext()
 	hDC := C.wglGetCurrentDC()
 
-	_ = properties
-	_ = glContext
-	_ = hDC
-
-	// clContext := C.CreateSharedCLGLContext((C.cl_device_id)(unsafe.Pointer(device.ID)), glContext, hDC)
-	// if clContext == nil {
-	// 	return nil, device, fmt.Errorf("failed to create OpenCL-OpenGL shared context")
-	// }
-
-	// cglContext := C.CGLGetCurrentContext()
-	// cglShareGroup := C.CGLGetShareGroup(cglContext)
-
 	properties = []C.cl_context_properties{
-		C.CL_CONTEXT_PLATFORM, C.longlong(uintptr(unsafe.Pointer(platform.ID))),
-		C.CL_GL_CONTEXT_KHR, C.longlong(uintptr(unsafe.Pointer(glContext))),
-		C.CL_WGL_HDC_KHR, C.longlong(uintptr(unsafe.Pointer(hDC))),
+		C.CL_CONTEXT_PLATFORM, C.cl_context_properties(uintptr(unsafe.Pointer(platform.ID))),
+		C.CL_GL_CONTEXT_KHR, C.cl_context_properties(uintptr(unsafe.Pointer(glContext))),
+		C.CL_WGL_HDC_KHR, C.cl_context_properties(uintptr(unsafe.Pointer(hDC))),
+		0,
 	}
 
 	var clErr C.cl_int
 	clContext := C.clCreateContext(
 		(*C.cl_context_properties)(&properties[0]),
-		0, nil, nil, nil, &clErr,
+		1, &device.ID,
+		nil, nil,
+		&clErr,
 	)
 
 	if clErr != C.CL_SUCCESS {
