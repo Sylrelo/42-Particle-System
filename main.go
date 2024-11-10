@@ -140,10 +140,10 @@ func (inp *ParticleSystem) MouseButtonEvent(w *glfw.Window, button glfw.MouseBut
 }
 
 func (ps *ParticleSystem) MouseMotionEvent(w *glfw.Window, xpos float64, ypos float64) {
-	diffX := (ps.inputs._oldMouseX - xpos) * 0.1
-	diffY := (ps.inputs._oldMouseY - ypos) * 0.1
+	diffX := (ps.inputs._oldMouseX - xpos) * 0.05
+	diffY := (ps.inputs._oldMouseY - -ypos) * 0.05
 	ps.inputs._oldMouseX = xpos
-	ps.inputs._oldMouseY = ypos
+	ps.inputs._oldMouseY = -ypos
 
 	if ps.inputs.mouseButton[glfw.MouseButtonLeft] == glfw.Press {
 		ps.HandleCameraRotation(float32(diffX), float32(diffY), true)
@@ -156,8 +156,8 @@ func (ps *ParticleSystem) MouseMotionEvent(w *glfw.Window, xpos float64, ypos fl
 }
 
 func (ps *ParticleSystem) MouseScrollEvent(w *glfw.Window, xoff float64, yoff float64) {
-	ps.orbitCamera.Distance += float32(xoff)
-	ps.orbitCamera.Position[2] += float32(xoff)
+	ps.orbitCamera.Distance += float32(yoff)
+	ps.orbitCamera.Position[2] += float32(yoff)
 	ps.RecalculateCamera()
 }
 
