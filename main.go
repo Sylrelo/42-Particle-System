@@ -47,6 +47,7 @@ func main() {
 		Elevation:    0,
 		Distance:     10,
 	}
+	system.orbitCamera.perspectiveMatrix = mgl32.Perspective(mgl32.DegToRad(45.0), 16.0/9.0, 0.01, 10000)
 	system.orbitCamera.RecalculateCamera()
 
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
@@ -103,7 +104,7 @@ func main() {
 	fmt.Println("OpenCL-OpenGL interop buffer created successfully on macOS")
 
 	////////////////////////
-	perspectiveMatrix := mgl32.Perspective(mgl32.DegToRad(45.0), 16.0/9.0, 0.01, 10000)
+	// perspectiveMatrix :=
 	// cameraMatrix := mgl32.Ident4()
 
 	// perspectiveMatrix = mgl32.Ident4()
@@ -112,7 +113,6 @@ func main() {
 	cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
 
 	gl.UseProgram(program)
-	gl.UniformMatrix4fv(perspectiveUniform, 1, false, &perspectiveMatrix[0])
 
 	cl_compute.RunInitKernel(particlesCount)
 
@@ -140,6 +140,7 @@ func main() {
 
 	for !window.ShouldClose() {
 		gl.UniformMatrix4fv(cameraUniform, 1, false, &system.orbitCamera.cameraMatrix[0])
+		gl.UniformMatrix4fv(perspectiveUniform, 1, false, &system.orbitCamera.perspectiveMatrix[0])
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 

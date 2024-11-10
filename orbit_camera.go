@@ -18,7 +18,14 @@ type OrbitCamera struct {
 	PanDelta    mgl32.Vec3
 	RotateDelta mgl32.Vec3
 
-	cameraMatrix mgl32.Mat4
+	perspectiveMatrix mgl32.Mat4
+	cameraMatrix      mgl32.Mat4
+}
+
+func (oc *OrbitCamera) RecalculatePerspectiveMatrix(width int, height int) {
+	ratio := float32(width) / float32(height)
+
+	oc.perspectiveMatrix = mgl32.Perspective(mgl32.DegToRad(45.0), ratio, 0.01, 10000)
 }
 
 func (oc *OrbitCamera) RecalculateCamera() {

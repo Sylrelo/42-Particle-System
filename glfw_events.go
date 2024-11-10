@@ -1,6 +1,9 @@
 package main
 
-import "github.com/go-gl/glfw/v3.3/glfw"
+import (
+	"github.com/go-gl/gl/all-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
+)
 
 type InputData struct {
 	mouseButton [8]glfw.Action
@@ -35,4 +38,8 @@ func (ps *ParticleSystem) MouseScrollEvent(w *glfw.Window, xoff float64, yoff fl
 func (inp *ParticleSystem) WindowResizeEvent(w *glfw.Window, width int, height int) {
 	inp.windowHeight = height
 	inp.windowWidth = width
+
+	inp.orbitCamera.RecalculatePerspectiveMatrix(width, height)
+	gl.Viewport(0, 0, int32(width), int32(height))
+
 }
