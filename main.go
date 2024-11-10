@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"runtime"
 
@@ -20,150 +19,13 @@ func init() {
 	runtime.LockOSThread()
 }
 
-type OrbitCamera struct {
-	Position     mgl32.Vec3
-	Target       mgl32.Vec3
-	TargetOffset mgl32.Vec3
-	Up           mgl32.Vec3
-	Azimuth      float32
-	Elevation    float32
-	Distance     float32
-
-	PanDelta    mgl32.Vec3
-	RotateDelta mgl32.Vec3
-}
-
-type InputData struct {
-	mouseButton [8]glfw.Action
-	_oldMouseX  float64
-	_oldMouseY  float64
-}
-
 type ParticleSystem struct {
 	windowHeight int
 	windowWidth  int
 
-	cameraMatrix mgl32.Mat4
-	orbitCamera  OrbitCamera
+	orbitCamera OrbitCamera
 
 	inputs InputData
-}
-
-func (ps *ParticleSystem) SmoothMovement() {
-
-	if abs(ps.orbitCamera.RotateDelta[0]) > 0.1 || abs(ps.orbitCamera.RotateDelta[1]) > 0.1 {
-		valX := ps.orbitCamera.RotateDelta[0] * 0.05
-		valY := ps.orbitCamera.RotateDelta[1] * 0.05
-
-		ps.orbitCamera.RotateDelta[0] -= valX
-		ps.orbitCamera.RotateDelta[1] -= valY
-
-		ps.HandleCameraRotation(valX, valY, false)
-	}
-
-	if abs(ps.orbitCamera.PanDelta[0]) > 0.1 || abs(ps.orbitCamera.PanDelta[1]) > 0.1 {
-		tmp := ps.orbitCamera.PanDelta.Mul(0.05)
-
-		ps.orbitCamera.PanDelta = ps.orbitCamera.PanDelta.Sub(tmp)
-
-		ps.HandleCameraMovement(tmp[0], tmp[1], false)
-	}
-}
-
-func (ps *ParticleSystem) RecalculateCamera() {
-	azimuthRad := ps.orbitCamera.Azimuth * float32(math.Pi) / 180.0
-	elevationRad := ps.orbitCamera.Elevation * float32(math.Pi) / 180.0
-
-	xOffset := ps.orbitCamera.Distance * float32(math.Cos(float64(elevationRad))) * float32(math.Sin(float64(azimuthRad)))
-	yOffset := ps.orbitCamera.Distance * float32(math.Sin(float64(elevationRad)))
-	zOffset := ps.orbitCamera.Distance * float32(math.Cos(float64(elevationRad))) * float32(math.Cos(float64(azimuthRad)))
-
-	ps.orbitCamera.Position = mgl32.Vec3{
-		ps.orbitCamera.Target.X() + ps.orbitCamera.TargetOffset[0] + xOffset,
-		ps.orbitCamera.Target.Y() + ps.orbitCamera.TargetOffset[1] + yOffset,
-		ps.orbitCamera.Target.Z() + ps.orbitCamera.TargetOffset[2] + zOffset,
-	}
-
-	actualTarget := ps.orbitCamera.Target.Add(ps.orbitCamera.TargetOffset)
-
-	ps.cameraMatrix = mgl32.LookAtV(
-		ps.orbitCamera.Position,
-		actualTarget,
-		mgl32.Vec3{0, 1, 0},
-	)
-}
-
-func (ps *ParticleSystem) HandleCameraRotation(x float32, y float32, storeDelta bool) {
-	ps.orbitCamera.Azimuth += x
-	ps.orbitCamera.Elevation += y
-
-	if storeDelta {
-		ps.orbitCamera.RotateDelta = clampvec3n(
-			ps.orbitCamera.RotateDelta.Add(mgl32.Vec3{x, y, 0}),
-			0,
-			MAX_CAM_SMOOTH,
-		)
-	}
-
-	ps.RecalculateCamera()
-}
-
-func (ps *ParticleSystem) HandleCameraMovement(x float32, y float32, storeDelta bool) {
-	forward := ps.orbitCamera.Target.
-		Add(ps.orbitCamera.TargetOffset).
-		Sub(ps.orbitCamera.Position).
-		Normalize()
-
-	right := forward.
-		Cross(ps.orbitCamera.Up).
-		Normalize()
-
-	up := right.
-		Cross(forward).
-		Normalize()
-
-	ps.orbitCamera.TargetOffset = ps.orbitCamera.TargetOffset.Add(right.Mul(x * 0.1)).Add(up.Mul(y * 0.1))
-
-	if storeDelta {
-		ps.orbitCamera.PanDelta = clampvec3n(
-			ps.orbitCamera.PanDelta.Add(mgl32.Vec3{x, y, 0}),
-			0,
-			MAX_CAM_SMOOTH,
-		)
-	}
-
-	ps.RecalculateCamera()
-}
-
-func (inp *ParticleSystem) MouseButtonEvent(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	inp.inputs.mouseButton[button] = action
-}
-
-func (ps *ParticleSystem) MouseMotionEvent(w *glfw.Window, xpos float64, ypos float64) {
-	diffX := (ps.inputs._oldMouseX - xpos) * 0.05
-	diffY := (ps.inputs._oldMouseY - -ypos) * 0.05
-	ps.inputs._oldMouseX = xpos
-	ps.inputs._oldMouseY = -ypos
-
-	if ps.inputs.mouseButton[glfw.MouseButtonLeft] == glfw.Press {
-		ps.HandleCameraRotation(float32(diffX), float32(diffY), true)
-	}
-
-	if ps.inputs.mouseButton[glfw.MouseButtonRight] == glfw.Press {
-		ps.HandleCameraMovement(float32(diffX), float32(diffY), true)
-	}
-
-}
-
-func (ps *ParticleSystem) MouseScrollEvent(w *glfw.Window, xoff float64, yoff float64) {
-	ps.orbitCamera.Distance += float32(yoff)
-	ps.orbitCamera.Position[2] += float32(yoff)
-	ps.RecalculateCamera()
-}
-
-func (inp *ParticleSystem) WindowResizeEvent(w *glfw.Window, width int, height int) {
-	inp.windowHeight = height
-	inp.windowWidth = width
 }
 
 ///
@@ -185,7 +47,7 @@ func main() {
 		Elevation:    0,
 		Distance:     10,
 	}
-	system.RecalculateCamera()
+	system.orbitCamera.RecalculateCamera()
 
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
@@ -277,7 +139,7 @@ func main() {
 	gl.ClearColor(0, 0, 0, 1.0)
 
 	for !window.ShouldClose() {
-		gl.UniformMatrix4fv(cameraUniform, 1, false, &system.cameraMatrix[0])
+		gl.UniformMatrix4fv(cameraUniform, 1, false, &system.orbitCamera.cameraMatrix[0])
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -285,7 +147,7 @@ func main() {
 
 		cl_compute.RunGravitateKernel(particlesCount)
 
-		system.SmoothMovement()
+		system.orbitCamera.SmoothMovement()
 
 		// gl.UseProgram(program)
 		// gl.EnableVertexAttribArray(0)
