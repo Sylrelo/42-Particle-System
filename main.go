@@ -26,6 +26,8 @@ type ParticleSystem struct {
 	orbitCamera OrbitCamera
 
 	inputs InputData
+
+	transmoveDelay float32
 }
 
 ///
@@ -49,6 +51,7 @@ func main() {
 	}
 	system.orbitCamera.perspectiveMatrix = mgl32.Perspective(mgl32.DegToRad(45.0), 16.0/9.0, 0.01, 10000)
 	system.orbitCamera.RecalculateCamera()
+	system.transmoveDelay = 0.0
 
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
@@ -70,11 +73,15 @@ func main() {
 		log.Fatalln("failed to initialize gl:", err)
 	}
 
+	// Init Shaders
+	gridViewProgram := GridViewProgram{}
+	gridViewProgram.Init()
+
 	currentPath, _ := os.Getwd()
 
-	renderFragmentShader, err := CompileShader(currentPath+"/shaders/base.frag", FRAGMENT)
+	renderFragmentShader, err := CompileShader(currentPath+"/resources/shaders/base.frag", FRAGMENT)
 	ExitOnError(err)
-	renderVertexShader, err := CompileShader(currentPath+"/shaders/base.vert", VERTEX)
+	renderVertexShader, err := CompileShader(currentPath+"/resources/shaders/base.vert", VERTEX)
 	ExitOnError(err)
 	program, err := CreateProgram(renderFragmentShader, renderVertexShader)
 	ExitOnError(err)
@@ -115,6 +122,7 @@ func main() {
 	gl.UseProgram(program)
 
 	cl_compute.RunInitKernel(particlesCount)
+	system.transmoveDelay = 0.0
 
 	var vao uint32
 	gl.UseProgram(program)
@@ -137,6 +145,7 @@ func main() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ClearColor(0, 0, 0, 1.0)
+	gl.Enable(gl.DEPTH_TEST)
 
 	for !window.ShouldClose() {
 		gl.UniformMatrix4fv(cameraUniform, 1, false, &system.orbitCamera.cameraMatrix[0])
@@ -144,9 +153,20 @@ func main() {
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		// gridViewProgram.Render(&system.orbitCamera)
+
+		gl.UseProgram(program)
+		gl.BindVertexArray(vao)
+		gl.DrawArrays(gl.POINTS, 0, int32(particlesCount))
+
 		gl.Finish()
 
-		cl_compute.RunGravitateKernel(particlesCount)
+		if system.transmoveDelay < 1.0 {
+			cl_compute.RunTransmoveKernel(particlesCount, system.transmoveDelay)
+			system.transmoveDelay += 0.05
+		} else {
+			// cl_compute.RunGravitateKernel(particlesCount)
+		}
 
 		system.orbitCamera.SmoothMovement()
 
@@ -155,10 +175,9 @@ func main() {
 		// gl.VertexAttribPointer(0, 4, gl.FLOAT, false, 0, nil)
 
 		// gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.POINTS, 0, int32(particlesCount))
+		// gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+		// time.Sleep(time.Duration(60) * time.Millisecond)
 
 		window.SwapBuffers()
 		glfw.PollEvents()

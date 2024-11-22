@@ -32,16 +32,32 @@ func (kernel *ClKernel) Release() {
 
 // }
 
-func SetKernelArgs(kernel CL_KERNEL, args ...CL_MEM) error {
+func SetKernelArgs(kernel CL_KERNEL, args ...interface{}) error {
 
 	for i, arg := range args {
 
-		// fmt.Println(arg, C.size_t(unsafe.Sizeof(arg)), unsafe.Pointer(&arg))
+		var argSize C.size_t
+		var argPtr unsafe.Pointer
+
+		switch v := arg.(type) {
+		case float32:
+			tmp := arg.(float32)
+			argSize = C.size_t(unsafe.Sizeof(tmp))
+			argPtr = unsafe.Pointer(&tmp)
+		case CL_MEM:
+			argSize = C.size_t(unsafe.Sizeof(v))
+			argPtr = unsafe.Pointer(&v)
+		default:
+			return fmt.Errorf("unsupported argument type: %T", v)
+		}
+
 		errCode := C.clSetKernelArg(
 			kernel,
 			(C.cl_uint)(i),
-			C.size_t(unsafe.Sizeof(arg)),
-			unsafe.Pointer(&arg),
+			argSize,
+			argPtr,
+			// C.size_t(unsafe.Sizeof(arg)),
+			// unsafe.Pointer(&arg),
 		)
 
 		if errCode != C.CL_SUCCESS {

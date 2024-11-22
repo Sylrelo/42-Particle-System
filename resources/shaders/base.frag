@@ -11,10 +11,10 @@ void main()
     vec3 color = vec3(0.5, 0.5, 0.5);
 
     // TESTS
-    vec3 slowColor = vec3(1.0, 0.3, 0.0);
-    vec3 fastColor = vec3(1.0, 1.0, 1.0);
+    vec3 fastColor = vec3(0.8, 0.8, 1.0);
+    vec3 slowColor = vec3(0.5, 0.3, 1.0);
 
-    float maxSpeed = 0.1;
+    float maxSpeed = 0.05;
     float normalizedSpeed = clamp(speed / maxSpeed, 0.0, 1.0);
 
 

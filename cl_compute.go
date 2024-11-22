@@ -22,12 +22,13 @@ type ComputeCL struct {
 	clInitKernel      clgo.CL_KERNEL
 	clIdleKernel      clgo.CL_KERNEL
 	clGravitateKernel clgo.CL_KERNEL
+	clTransmove       clgo.CL_KERNEL
 }
 
 func InitClCompute(glPositionBuffer uint32, glVelocityBuffer uint32) ComputeCL {
 	currentPath, err := os.Getwd()
 	ExitOnError(err)
-	INIT_KERNEL_PATH := path.Join(currentPath, "compute/kernel.cl")
+	INIT_KERNEL_PATH := path.Join(currentPath, "resources/compute/kernel.cl")
 
 	clPlatforms, err := clgo.GetAvailablePlatforms()
 	if err != nil {
@@ -71,6 +72,7 @@ func InitClCompute(glPositionBuffer uint32, glVelocityBuffer uint32) ComputeCL {
 	return ComputeCL{
 		clInitKernel:      initProgram.Kernels["initParticles"],
 		clGravitateKernel: initProgram.Kernels["gravitateParticles"],
+		clTransmove:       initProgram.Kernels["transmove"],
 
 		device:      clDevices[0],
 		clContext:   clContext,
@@ -105,6 +107,37 @@ func (ccl *ComputeCL) RunInitKernel(particleCount int) error {
 		return err
 	}
 	err = ccl.queue.EnqueueKernel(ccl.clInitKernel, particleCount)
+	if err != nil {
+		return err
+	}
+
+	err = ccl.queue.ReleaseGLObjects(glObjects)
+	if err != nil {
+		return err
+	}
+
+	ccl.queue.Finish()
+	return nil
+}
+
+/* ---------------------------------- MOVE ---------------------------------- */
+
+func (ccl *ComputeCL) RunTransmoveKernel(particleCount int, delta float32) error {
+	err := clgo.SetKernelArgs(ccl.clTransmove, ccl.clPositionBuffer, ccl.clVelocityBuffer, delta)
+	if err != nil {
+		return err
+	}
+
+	glObjects := []clgo.CL_MEM{
+		(clgo.CL_MEM)(unsafe.Pointer(ccl.clPositionBuffer)),
+		(clgo.CL_MEM)(unsafe.Pointer(ccl.clVelocityBuffer)),
+	}
+
+	err = ccl.queue.AcquireGLObjects(glObjects)
+	if err != nil {
+		return err
+	}
+	err = ccl.queue.EnqueueKernel(ccl.clTransmove, particleCount)
 	if err != nil {
 		return err
 	}

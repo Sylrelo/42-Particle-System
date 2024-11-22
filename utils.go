@@ -50,3 +50,23 @@ func clampvec3n(v mgl32.Vec3, min float32, max float32) mgl32.Vec3 {
 
 	return v
 }
+
+var QUAD_VERTICES = []float32{
+	-0.5, -0.5, 0.0, 0.0, 0.0, // Bottom-left
+	0.5, -0.5, 0.0, 1.0, 0.0, // Bottom-right
+	0.5, 0.5, 0.0, 1.0, 1.0, // Top-right
+
+	-0.5, -0.5, 0.0, 0.0, 0.0, // Bottom-left
+	0.5, 0.5, 0.0, 1.0, 1.0, // Top-right
+	-0.5, 0.5, 0.0, 0.0, 1.0, // Top-left
+}
+
+var BIG_QUAD_VERTICES = []float32{
+	-1000.0, -1000.0, 0.0, 0.0, 0.0, // Bottom-left
+	1000.0, -1000.0, 0.0, 1.0, 0.0, // Bottom-right
+	1000.0, 1000.0, 0.0, 1.0, 1.0, // Top-right
+
+	-1000.0, -1000.0, 0.0, 0.0, 0.0, // Bottom-left
+	1000.0, 1000.0, 0.0, 1.0, 1.0, // Top-right
+	-1000.0, 1000.0, 0.0, 0.0, 1.0, // Top-left
+}
