@@ -23,9 +23,9 @@ type ClPlatform struct {
 func GetAvailablePlatforms() ([]ClPlatform, error) {
 	var numPlatforms C.cl_uint
 
-	if C.clGetPlatformIDs(0, nil, &numPlatforms) != C.CL_SUCCESS {
+	if errCl := C.clGetPlatformIDs(0, nil, &numPlatforms); errCl != C.CL_SUCCESS {
 		fmt.Println("Error getting number of platforms")
-		return nil, errors.New("Error getting number of platforms")
+		return nil, errors.New(ErrorString(int(errCl)))
 	}
 
 	platforms := make([]CL_PLATFORM_ID, numPlatforms)

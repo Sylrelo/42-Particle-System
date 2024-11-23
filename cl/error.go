@@ -1,5 +1,7 @@
 package clgo
 
+import "fmt"
+
 var openCLErrorDescriptions = map[int]string{
 	0:   "CL_SUCCESS",
 	-1:  "CL_DEVICE_NOT_FOUND",
@@ -66,5 +68,6 @@ func ErrorString(errorCode int) string {
 	if errstr, exists := openCLErrorDescriptions[errorCode]; exists {
 		return errstr
 	}
-	return "Unknown OpenCL Error"
+
+	return fmt.Sprintf("Unknown error : %d\n", errorCode)
 }

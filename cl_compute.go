@@ -32,7 +32,7 @@ func InitClCompute(glPositionBuffer uint32, glVelocityBuffer uint32) ComputeCL {
 
 	clPlatforms, err := clgo.GetAvailablePlatforms()
 	if err != nil {
-		log.Fatalln(clPlatforms)
+		log.Fatalln(err)
 	}
 
 	log.Println("Available OpenCL Platforms ====================")
