@@ -25,7 +25,7 @@ type ComputeCL struct {
 	clTransmove       clgo.CL_KERNEL
 }
 
-func InitClCompute(glPositionBuffer uint32, glVelocityBuffer uint32) ComputeCL {
+func (ccl *ComputeCL) InitCompute(glPositionBuffer uint32, glVelocityBuffer uint32) {
 	currentPath, err := os.Getwd()
 	ExitOnError(err)
 	INIT_KERNEL_PATH := path.Join(currentPath, "resources/compute/kernel.cl")
@@ -69,20 +69,17 @@ func InitClCompute(glPositionBuffer uint32, glVelocityBuffer uint32) ComputeCL {
 	clVelocityBuffer, err := clgo.CreateSharedBuffer(clContext, glVelocityBuffer)
 	ExitOnError(err)
 
-	return ComputeCL{
-		clInitKernel:      initProgram.Kernels["initParticles"],
-		clGravitateKernel: initProgram.Kernels["gravitateParticles"],
-		clTransmove:       initProgram.Kernels["transmove"],
+	ccl.clInitKernel = initProgram.Kernels["initParticles"]
+	ccl.clGravitateKernel = initProgram.Kernels["gravitateParticles"]
+	ccl.clTransmove = initProgram.Kernels["transmove"]
 
-		device:      clDevices[0],
-		clContext:   clContext,
-		queue:       clQueue,
-		initProgram: initProgram,
+	ccl.device = clDevices[0]
+	ccl.clContext = clContext
+	ccl.queue = clQueue
+	ccl.initProgram = initProgram
 
-		clPositionBuffer: clPositionBuffer,
-		clVelocityBuffer: clVelocityBuffer,
-	}
-
+	ccl.clPositionBuffer = clPositionBuffer
+	ccl.clVelocityBuffer = clVelocityBuffer
 }
 
 /* -------------------------------------------------------------------------- */

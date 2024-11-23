@@ -106,7 +106,7 @@ func main() {
 
 	fmt.Println("OpenGL VBO created:", vbo)
 
-	cl_compute := InitClCompute(vbo, vbo_velocity)
+	cl_compute := GetCompute()
 
 	fmt.Println("OpenCL-OpenGL interop buffer created successfully on macOS")
 

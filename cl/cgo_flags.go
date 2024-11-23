@@ -6,7 +6,7 @@ package clgo
 #cgo darwin LDFLAGS: -framework OpenCL -framework OpenGL
 
 #cgo linux CFLAGS: -Iincludes/
-#cgo linux LDFLAGS: -L/usr/lib/x86_64-linux-gnu -Llib/ -lOpenCL
+#cgo linux LDFLAGS: -L/usr/lib/x86_64-linux-gnu -Llib/ -Llib/vendors -lOpenCL
 
 #cgo windows CFLAGS: -Iincludes/
 #cgo windows LDFLAGS: -static -Llib/ -lOpenCL
